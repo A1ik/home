@@ -14,18 +14,27 @@ Cloudflare Worker с D1 базой данных и Drizzle ORM для хране
 ```
 ├── package.json              # Корневой workspace
 ├── .gitignore
+├── eslint.config.js          # ESLint конфигурация
+├── .prettierrc               # Prettier конфигурация
+├── .husky/                   # Git hooks
 └── worker/
     ├── package.json          # Зависимости и npm скрипты
     ├── tsconfig.json         # TypeScript конфигурация
     ├── wrangler.toml         # Cloudflare конфигурация
+    ├── vitest.config.ts      # Vitest конфигурация
     ├── drizzle.config.ts     # Drizzle миграции
     ├── drizzle/              # SQL миграции
     └── src/
-        ├── index.ts          # Точка входа (Hono роутер)
+        ├── index.ts          # Точка входа + scheduled handler
+        ├── index.spec.ts     # Тесты API
         ├── types.ts          # TypeScript типы
-        └── db/
-            ├── schema.ts     # Схема базы данных
-            └── client.ts     # Клиент БД
+        ├── db/
+        │   ├── schema.ts     # Схема базы данных
+        │   └── client.ts     # Клиент БД
+        └── services/
+            ├── gdelt.ts      # GDELT API сервис
+            ├── gdelt.spec.ts # Тесты GDELT сервиса
+            └── database.ts   # Сервис вставки данных
 ```
 
 ## Быстрый старт
@@ -63,9 +72,23 @@ curl http://localhost:8787/api/latest
 | --------------------------- | ----------------------------------- |
 | `npm run dev`               | Запуск локального dev сервера       |
 | `npm run deploy`            | Деплой на Cloudflare                |
+| `npm run test`              | Запуск тестов                       |
+| `npm run test:watch`        | Запуск тестов в watch режиме        |
+| `npm run typecheck`         | Проверка TypeScript типов           |
 | `npm run db:generate`       | Генерация SQL миграций из схемы     |
 | `npm run db:migrate:local`  | Применение миграций к локальной D1  |
 | `npm run db:migrate:remote` | Применение миграций к production D1 |
+
+Команды из корня проекта:
+
+| Команда                    | Описание                   |
+| -------------------------- | -------------------------- |
+| `npm run lint`             | ESLint проверка            |
+| `npm run lint:fix`         | ESLint с автоисправлением  |
+| `npm run format`           | Форматирование Prettier    |
+| `npm run format:check`     | Проверка форматирования    |
+| `npm run test:worker`      | Запуск тестов worker       |
+| `npm run typecheck:worker` | TypeScript проверка worker |
 
 ## API Эндпоинты
 
@@ -97,6 +120,53 @@ curl http://localhost:8787/api/latest
     "created_at": 1705312800
   }
 ]
+```
+
+## Scheduled Cron (GDELT Sync)
+
+Worker автоматически получает данные из GDELT 2.0 DOC API каждые 2 часа.
+
+### Конфигурация
+
+В `wrangler.toml`:
+
+```toml
+[triggers]
+crons = ["0 */2 * * *"]
+```
+
+### GDELT API
+
+- **Endpoint**: `https://api.gdeltproject.org/api/v2/doc/doc`
+- **Query**: `"Artificial Intelligence" OR "Automation"`
+- **Лимит**: 50 статей за запрос
+- **Сортировка**: по дате (новые первые)
+
+### Дедупликация
+
+Статьи вставляются с `ON CONFLICT DO NOTHING` по полю `url` — дубликаты автоматически пропускаются.
+
+### Тестирование cron локально
+
+```bash
+# Запустить dev сервер
+cd worker && npm run dev
+
+# В другом терминале — триггер cron вручную
+curl "http://localhost:8787/__scheduled?cron=0+*/2+*+*+*"
+
+# Проверить результаты
+curl http://localhost:8787/api/latest
+```
+
+### Логи
+
+При каждом запуске в консоль выводится:
+
+```
+Starting scheduled GDELT fetch...
+Fetched 50 articles from GDELT
+GDELT sync complete: 12 inserted, 38 skipped (duplicates)
 ```
 
 ## База данных
@@ -180,6 +250,37 @@ npm run deploy
 ```
 
 ## Разработка
+
+### Тестирование
+
+Проект использует Vitest с `@cloudflare/vitest-pool-workers` для тестирования в среде Workers.
+
+```bash
+# Запуск тестов
+cd worker && npm run test
+
+# Или из корня
+npm run test:worker
+
+# Watch режим
+cd worker && npm run test:watch
+```
+
+Тесты находятся в:
+
+- `src/index.spec.ts` — тесты API эндпоинтов
+- `src/services/gdelt.spec.ts` — тесты GDELT сервиса
+
+### Линтинг и форматирование
+
+Pre-commit hooks автоматически запускают ESLint и Prettier при коммите.
+
+```bash
+# Ручной запуск
+npm run lint        # проверка
+npm run lint:fix    # с исправлением
+npm run format      # форматирование
+```
 
 ### Добавление нового эндпоинта
 
