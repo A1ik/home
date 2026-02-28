@@ -59,12 +59,12 @@ curl http://localhost:8787/api/latest
 
 Все команды выполняются из директории `worker/`:
 
-| Команда | Описание |
-|---------|----------|
-| `npm run dev` | Запуск локального dev сервера |
-| `npm run deploy` | Деплой на Cloudflare |
-| `npm run db:generate` | Генерация SQL миграций из схемы |
-| `npm run db:migrate:local` | Применение миграций к локальной D1 |
+| Команда                     | Описание                            |
+| --------------------------- | ----------------------------------- |
+| `npm run dev`               | Запуск локального dev сервера       |
+| `npm run deploy`            | Деплой на Cloudflare                |
+| `npm run db:generate`       | Генерация SQL миграций из схемы     |
+| `npm run db:migrate:local`  | Применение миграций к локальной D1  |
 | `npm run db:migrate:remote` | Применение миграций к production D1 |
 
 ## API Эндпоинты
@@ -74,6 +74,7 @@ curl http://localhost:8787/api/latest
 Проверка работоспособности сервиса.
 
 **Ответ:**
+
 ```json
 { "status": "ok" }
 ```
@@ -83,6 +84,7 @@ curl http://localhost:8787/api/latest
 Получение 10 последних записей из таблицы `gdelt_events`.
 
 **Ответ:**
+
 ```json
 [
   {
@@ -101,15 +103,15 @@ curl http://localhost:8787/api/latest
 
 ### Схема таблицы `gdelt_events`
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| `id` | INTEGER | Primary key, auto-increment |
-| `url` | TEXT | URL источника (unique, not null) |
-| `title` | TEXT | Заголовок новости (not null) |
-| `publish_date` | TEXT | Дата публикации (ISO формат) |
-| `snippet` | TEXT | Краткое описание |
-| `raw_json` | TEXT | Полный JSON от GDELT |
-| `created_at` | INTEGER | Unix timestamp создания записи |
+| Поле           | Тип     | Описание                         |
+| -------------- | ------- | -------------------------------- |
+| `id`           | INTEGER | Primary key, auto-increment      |
+| `url`          | TEXT    | URL источника (unique, not null) |
+| `title`        | TEXT    | Заголовок новости (not null)     |
+| `publish_date` | TEXT    | Дата публикации (ISO формат)     |
+| `snippet`      | TEXT    | Краткое описание                 |
+| `raw_json`     | TEXT    | Полный JSON от GDELT             |
+| `created_at`   | INTEGER | Unix timestamp создания записи   |
 
 ### Работа с миграциями
 
@@ -132,16 +134,19 @@ curl http://localhost:8787/api/latest
 ### Первоначальная настройка
 
 1. Авторизуйтесь в Cloudflare:
+
    ```bash
    npx wrangler login
    ```
 
 2. Создайте D1 базу данных:
+
    ```bash
    npx wrangler d1 create gdelt_raw_news
    ```
 
 3. Скопируйте `database_id` из вывода и обновите `wrangler.toml`:
+
    ```toml
    [[d1_databases]]
    binding = "DB"
@@ -150,6 +155,7 @@ curl http://localhost:8787/api/latest
    ```
 
 4. Примените миграции:
+
    ```bash
    npm run db:migrate:remote
    ```
@@ -166,6 +172,7 @@ npm run deploy
 ```
 
 При изменении схемы БД не забудьте сначала применить миграции:
+
 ```bash
 npm run db:generate
 npm run db:migrate:remote
@@ -182,17 +189,17 @@ npm run deploy
 app.get("/api/events/:id", async (c) => {
   const id = Number(c.req.param("id"));
   const db = getDb(c.env.DB);
-  
+
   const event = await db
     .select()
     .from(gdeltEvents)
     .where(eq(gdeltEvents.id, id))
     .get();
-    
+
   if (!event) {
     return c.json({ error: "Not found" }, 404);
   }
-  
+
   return c.json(event);
 });
 ```
@@ -200,6 +207,7 @@ app.get("/api/events/:id", async (c) => {
 ### Добавление новой таблицы
 
 1. Добавьте определение в `src/db/schema.ts`:
+
    ```typescript
    export const newTable = sqliteTable("new_table", {
      id: integer("id").primaryKey({ autoIncrement: true }),

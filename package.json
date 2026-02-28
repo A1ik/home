@@ -5,5 +5,32 @@
   "private": true,
   "workspaces": [
     "worker"
-  ]
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck:worker": "npm run typecheck -w worker",
+    "test:worker": "npm run test -w worker",
+    "lint-staged": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.0",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.56.1"
+  }
 }

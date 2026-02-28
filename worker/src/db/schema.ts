@@ -8,7 +8,9 @@ export const gdeltEvents = sqliteTable("gdelt_events", {
   publish_date: text("publish_date"),
   snippet: text("snippet"),
   raw_json: text("raw_json"),
-  created_at: integer("created_at").notNull().default(sql`(unixepoch())`),
+  created_at: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 export type GdeltEvent = typeof gdeltEvents.$inferSelect;

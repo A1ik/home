@@ -7,3 +7,6 @@ binding = "DB"
 database_name = "gdelt_raw_news"
 database_id = "local"
 migrations_dir = "drizzle"
+
+[triggers]
+crons = ["0 */2 * * *"]
