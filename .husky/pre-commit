@@ -1,2 +1,3 @@
 npm run lint-staged
 npm run typecheck:worker
+npm run typecheck:web

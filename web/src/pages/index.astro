@@ -1,0 +1,29 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArticleCard from "../components/ArticleCard.astro";
+
+const articles = (await getCollection("articles"))
+  .filter((a) => !a.data.draft)
+  .sort((a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime());
+---
+
+<BaseLayout title="Home">
+  <h1 class="text-3xl font-bold tracking-tight">Articles</h1>
+  {
+    articles.length > 0 ? (
+      <div class="mt-6 divide-y divide-gray-200">
+        {articles.map((article) => (
+          <ArticleCard
+            title={article.data.title}
+            slug={article.slug}
+            publishedAt={article.data.publishedAt}
+            summary={article.data.summary}
+          />
+        ))}
+      </div>
+    ) : (
+      <p class="mt-6 text-gray-500">No articles yet.</p>
+    )
+  }
+</BaseLayout>

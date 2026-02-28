@@ -1,8 +1,18 @@
-# GDELT News Worker
+# doichev.com
 
-Cloudflare Worker с D1 базой данных и Drizzle ORM для хранения и получения новостных данных GDELT.
+Монорепозиторий с Cloudflare Worker (бэкенд, GDELT sync) и Astro веб-сайтом с Keystatic CMS.
 
 ## Технологии
+
+### Web (Astro)
+
+- **Astro 5** — фреймворк для контентных сайтов
+- **Tailwind CSS v4** — утилитарный CSS через `@tailwindcss/vite`
+- **React** — для интерактивных компонентов (Keystatic UI)
+- **Keystatic CMS** — Git-based CMS с локальным хранилищем
+- **@astrojs/cloudflare** — адаптер для деплоя на Cloudflare Pages
+
+### Worker (API)
 
 - **Cloudflare Workers** — serverless runtime
 - **Cloudflare D1** — SQLite база данных на edge
@@ -13,28 +23,47 @@ Cloudflare Worker с D1 базой данных и Drizzle ORM для хране
 
 ```
 ├── package.json              # Корневой workspace
-├── .gitignore
 ├── eslint.config.js          # ESLint конфигурация
 ├── .prettierrc               # Prettier конфигурация
 ├── .husky/                   # Git hooks
+├── web/                      # Astro + Keystatic сайт
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── astro.config.mjs
+│   ├── keystatic.config.ts   # Keystatic CMS конфигурация
+│   ├── public/
+│   └── src/
+│       ├── content/
+│       │   ├── config.ts     # Astro Content Collections схема
+│       │   └── articles/     # Статьи (Markdoc)
+│       ├── layouts/
+│       │   └── BaseLayout.astro
+│       ├── components/
+│       │   └── ArticleCard.astro
+│       ├── pages/
+│       │   ├── index.astro          # Главная — список статей
+│       │   └── articles/
+│       │       └── [slug].astro     # Детальная страница статьи
+│       └── styles/
+│           └── global.css
 └── worker/
-    ├── package.json          # Зависимости и npm скрипты
-    ├── tsconfig.json         # TypeScript конфигурация
+    ├── package.json
+    ├── tsconfig.json
     ├── wrangler.toml         # Cloudflare конфигурация
-    ├── vitest.config.ts      # Vitest конфигурация
-    ├── drizzle.config.ts     # Drizzle миграции
+    ├── vitest.config.ts
+    ├── drizzle.config.ts
     ├── drizzle/              # SQL миграции
     └── src/
         ├── index.ts          # Точка входа + scheduled handler
-        ├── index.spec.ts     # Тесты API
-        ├── types.ts          # TypeScript типы
+        ├── index.spec.ts
+        ├── types.ts
         ├── db/
         │   ├── schema.ts     # Схема базы данных
-        │   └── client.ts     # Клиент БД
+        │   └── client.ts
         └── services/
             ├── gdelt.ts      # GDELT API сервис
-            ├── gdelt.spec.ts # Тесты GDELT сервиса
-            └── database.ts   # Сервис вставки данных
+            ├── gdelt.spec.ts
+            └── database.ts
 ```
 
 ## Быстрый старт
@@ -45,7 +74,16 @@ Cloudflare Worker с D1 базой данных и Drizzle ORM для хране
 npm install
 ```
 
-### Локальная разработка
+### Web (Astro + Keystatic)
+
+```bash
+npm run dev:web
+```
+
+- Сайт: `http://localhost:4321`
+- Keystatic CMS: `http://localhost:4321/keystatic`
+
+### Worker (API)
 
 ```bash
 cd worker
@@ -66,7 +104,21 @@ curl http://localhost:8787/api/latest
 
 ## Команды
 
-Все команды выполняются из директории `worker/`:
+### Корневые команды
+
+| Команда                    | Описание                        |
+| -------------------------- | ------------------------------- |
+| `npm run dev:web`          | Запуск Astro dev сервера        |
+| `npm run build:web`        | Сборка web для Cloudflare Pages |
+| `npm run typecheck:web`    | TypeScript проверка web         |
+| `npm run lint`             | ESLint проверка                 |
+| `npm run lint:fix`         | ESLint с автоисправлением       |
+| `npm run format`           | Форматирование Prettier         |
+| `npm run format:check`     | Проверка форматирования         |
+| `npm run test:worker`      | Запуск тестов worker            |
+| `npm run typecheck:worker` | TypeScript проверка worker      |
+
+### Команды worker (из директории `worker/`)
 
 | Команда                     | Описание                            |
 | --------------------------- | ----------------------------------- |
@@ -79,16 +131,26 @@ curl http://localhost:8787/api/latest
 | `npm run db:migrate:local`  | Применение миграций к локальной D1  |
 | `npm run db:migrate:remote` | Применение миграций к production D1 |
 
-Команды из корня проекта:
+## Web (Astro + Keystatic)
 
-| Команда                    | Описание                   |
-| -------------------------- | -------------------------- |
-| `npm run lint`             | ESLint проверка            |
-| `npm run lint:fix`         | ESLint с автоисправлением  |
-| `npm run format`           | Форматирование Prettier    |
-| `npm run format:check`     | Проверка форматирования    |
-| `npm run test:worker`      | Запуск тестов worker       |
-| `npm run typecheck:worker` | TypeScript проверка worker |
+### Архитектура
+
+- **Гибридный режим**: публичные страницы (`/`, `/articles/[slug]`) статически пререндерятся; `/keystatic` работает через SSR
+- **Keystatic CMS**: локальное хранилище (контент сохраняется в Git)
+- **Tailwind CSS v4**: через Vite-плагин `@tailwindcss/vite`
+- **Content Collections**: Astro Content Collections API для типобезопасного доступа к статьям
+
+### Коллекция `articles`
+
+| Поле          | Тип      | Описание                    |
+| ------------- | -------- | --------------------------- |
+| `title`       | slug     | Заголовок (генерирует slug) |
+| `publishedAt` | date     | Дата публикации             |
+| `draft`       | checkbox | Черновик (скрыт из списка)  |
+| `summary`     | text     | Краткое описание            |
+| `content`     | markdoc  | Основной контент            |
+
+Статьи хранятся в `web/src/content/articles/` в формате Markdoc (`.mdoc`).
 
 ## API Эндпоинты
 

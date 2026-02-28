@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import astro from "eslint-plugin-astro";
 
 export default [
   {
@@ -8,10 +9,12 @@ export default [
       "**/dist/**",
       "**/.wrangler/**",
       "**/drizzle/**",
+      "**/.astro/**",
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  ...astro.configs.recommended,
   {
     files: ["**/*.ts"],
     rules: {

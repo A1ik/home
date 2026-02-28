@@ -1,0 +1,28 @@
+---
+interface Props {
+  title: string;
+  slug: string;
+  publishedAt: Date;
+  summary: string;
+}
+
+const { title, slug, publishedAt, summary } = Astro.props;
+---
+
+<article class="py-6">
+  <a href={`/articles/${slug}`} class="group block">
+    <time datetime={publishedAt.toISOString()} class="text-sm text-gray-500">
+      {
+        publishedAt.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      }
+    </time>
+    <h2 class="mt-1 text-xl font-semibold group-hover:text-gray-600">
+      {title}
+    </h2>
+    <p class="mt-2 text-gray-600">{summary}</p>
+  </a>
+</article>
