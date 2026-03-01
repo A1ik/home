@@ -1,0 +1,1 @@
+ALTER TABLE `gdelt_events` ADD `processed` integer DEFAULT 0 NOT NULL;

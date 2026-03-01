@@ -6,7 +6,11 @@ import keystatic from "@keystatic/astro";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    platformProxy: {
+      persist: { path: "../worker/.wrangler/state/v3" },
+    },
+  }),
   integrations: [react(), markdoc(), keystatic()],
   i18n: {
     defaultLocale: "en",

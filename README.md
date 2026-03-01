@@ -36,14 +36,23 @@
 │       ├── content/
 │       │   ├── config.ts     # Astro Content Collections схема
 │       │   └── articles/     # Статьи (Markdoc)
+│       ├── db/
+│       │   ├── schema.ts     # Drizzle-схема gdelt_events (копия worker)
+│       │   └── client.ts     # D1 Drizzle-клиент
 │       ├── layouts/
 │       │   └── BaseLayout.astro
 │       ├── components/
 │       │   └── ArticleCard.astro
 │       ├── pages/
 │       │   ├── index.astro          # Главная — список статей
+│       │   ├── admin/
+│       │   │   └── gdelt.astro      # GDELT Dashboard (SSR)
+│       │   ├── api/
+│       │   │   └── promote.ts       # POST: promote GDELT → Keystatic draft
 │       │   └── articles/
 │       │       └── [slug].astro     # Детальная страница статьи
+│       ├── utils/
+│       │   └── slug.ts              # Генерация slug из заголовков
 │       └── styles/
 │           └── global.css
 └── worker/
@@ -150,9 +159,33 @@ curl http://localhost:8787/api/latest
 | `summary`     | text     | Краткое описание            |
 | `content`     | markdoc  | Основной контент            |
 
-Статьи хранятся в `web/src/content/articles/` в формате Markdoc (`.mdoc`).
+Статьи хранятся в `web/src/content/articles/{lang}/{slug}/index.mdoc` в формате Markdoc.
 
-## API Эндпоинты
+## GDELT News Dashboard
+
+Внутренний admin-дашборд для просмотра GDELT-новостей из D1 и продвижения их в черновики Keystatic.
+
+### Использование
+
+1. Запустите worker (заполняет D1 данными): `cd worker && npx wrangler dev --test-scheduled`
+2. Запустите web: `cd web && npm run dev`
+3. Откройте `http://localhost:4321/admin/gdelt`
+
+Дашборд отображает 50 последних необработанных записей из `gdelt_events`. Для каждой записи можно:
+
+- Выбрать язык (EN / RU / UK)
+- Нажать **Promote to Draft** -- создаст `.mdoc` файл в `src/content/articles/{lang}/{slug}/index.mdoc` с `draft: true`
+- Запись помечается как `processed = 1` и исчезает из дашборда
+
+### Технические детали
+
+- **Страница**: `web/src/pages/admin/gdelt.astro` (SSR, `prerender = false`)
+- **API**: `web/src/pages/api/promote.ts` -- POST endpoint, принимает `id` и `lang`
+- **D1 привязка**: web-проект использует тот же D1 (`gdelt_raw_news`) через `wrangler.toml` и `platformProxy.persist` (разделяет локальное состояние с worker)
+- **Запись файлов**: через `node:fs/promises` (локальная разработка). Для production (Cloudflare Pages) потребуется переключение на GitHub API
+- **Схема**: `web/src/db/schema.ts` -- копия схемы worker'а; источник истины -- `worker/src/db/schema.ts`
+
+## API Эндпоинты (Worker)
 
 ### GET /api/health
 
@@ -235,15 +268,16 @@ GDELT sync complete: 12 inserted, 38 skipped (duplicates)
 
 ### Схема таблицы `gdelt_events`
 
-| Поле           | Тип     | Описание                         |
-| -------------- | ------- | -------------------------------- |
-| `id`           | INTEGER | Primary key, auto-increment      |
-| `url`          | TEXT    | URL источника (unique, not null) |
-| `title`        | TEXT    | Заголовок новости (not null)     |
-| `publish_date` | TEXT    | Дата публикации (ISO формат)     |
-| `snippet`      | TEXT    | Краткое описание                 |
-| `raw_json`     | TEXT    | Полный JSON от GDELT             |
-| `created_at`   | INTEGER | Unix timestamp создания записи   |
+| Поле           | Тип     | Описание                                      |
+| -------------- | ------- | --------------------------------------------- |
+| `id`           | INTEGER | Primary key, auto-increment                   |
+| `url`          | TEXT    | URL источника (unique, not null)              |
+| `title`        | TEXT    | Заголовок новости (not null)                  |
+| `publish_date` | TEXT    | Дата публикации (ISO формат)                  |
+| `snippet`      | TEXT    | Краткое описание                              |
+| `raw_json`     | TEXT    | Полный JSON от GDELT                          |
+| `created_at`   | INTEGER | Unix timestamp создания записи                |
+| `processed`    | INTEGER | 0 = необработано, 1 = промоутнуто в Keystatic |
 
 ### Работа с миграциями
 
