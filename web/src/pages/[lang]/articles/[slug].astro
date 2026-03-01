@@ -1,31 +1,39 @@
 ---
 import { getCollection } from "astro:content";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import { defaultLang } from "../../i18n/config";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import type { Language } from "../../../i18n/config";
 import {
   useTranslations,
   formatDate,
   getLocalizedPath,
-} from "../../i18n/utils";
-
-const lang = defaultLang;
+} from "../../../i18n/utils";
 
 export async function getStaticPaths() {
-  const { getSlugFromEntryId } = await import("../../i18n/utils");
-  const { defaultLang } = await import("../../i18n/config");
+  const { getSlugFromEntryId } = await import("../../../i18n/utils");
+  const { languages, defaultLang } = await import("../../../i18n/config");
   const articles = await getCollection("articles");
-  return articles
-    .filter((a) => !a.data.draft && a.id.startsWith("en/"))
-    .map((entry) => {
-      const slug = getSlugFromEntryId(entry.id, defaultLang);
-      return {
-        params: { slug },
-        props: { entry },
-      };
-    });
+
+  return languages
+    .filter((lang) => lang !== defaultLang)
+    .flatMap((lang) =>
+      articles
+        .filter((a) => !a.data.draft && a.id.startsWith(`${lang}/`))
+        .map((entry) => {
+          const slug = getSlugFromEntryId(entry.id, lang);
+          return {
+            params: { lang, slug },
+            props: { entry, lang },
+          };
+        })
+    );
 }
 
-const { entry } = Astro.props;
+interface Props {
+  entry: Awaited<ReturnType<typeof getCollection>>[number];
+  lang: Language;
+}
+
+const { entry, lang } = Astro.props;
 const { Content } = await entry.render();
 const t = useTranslations(lang);
 ---

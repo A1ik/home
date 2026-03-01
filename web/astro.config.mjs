@@ -8,6 +8,13 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   adapter: cloudflare(),
   integrations: [react(), markdoc(), keystatic()],
+  i18n: {
+    defaultLocale: "en",
+    locales: ["en", "ru", "uk"],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   vite: {
     plugins: [tailwindcss()],
   },

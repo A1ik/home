@@ -1,0 +1,39 @@
+---
+import { languages } from "../i18n/config";
+import type { Language } from "../i18n/config";
+import { getLocalizedPath } from "../i18n/utils";
+
+interface Props {
+  currentLang: Language;
+  currentPath: string;
+}
+
+const { currentLang, currentPath } = Astro.props;
+
+function getSwitcherUrl(lang: Language): string {
+  const pathWithoutLang = currentPath.replace(/^\/(ru|uk)/, "") || "/";
+  return getLocalizedPath(pathWithoutLang, lang);
+}
+---
+
+<div class="flex items-center gap-2 text-sm">
+  {
+    languages.map((lang, index) => (
+      <>
+        {index > 0 && <span class="text-gray-300">|</span>}
+        <a
+          href={getSwitcherUrl(lang)}
+          hreflang={lang}
+          class:list={[
+            "hover:text-gray-600",
+            { "font-semibold text-gray-900": lang === currentLang },
+            { "text-gray-500": lang !== currentLang },
+          ]}
+          aria-current={lang === currentLang ? "page" : undefined}
+        >
+          {lang.toUpperCase()}
+        </a>
+      </>
+    ))
+  }
+</div>

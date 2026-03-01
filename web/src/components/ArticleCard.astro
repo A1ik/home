@@ -1,24 +1,23 @@
 ---
+import { defaultLang } from "../i18n/config";
+import type { Language } from "../i18n/config";
+import { getArticleUrl, formatDate } from "../i18n/utils";
+
 interface Props {
   title: string;
   slug: string;
   publishedAt: Date;
   summary: string;
+  lang?: Language;
 }
 
-const { title, slug, publishedAt, summary } = Astro.props;
+const { title, slug, publishedAt, summary, lang = defaultLang } = Astro.props;
 ---
 
 <article class="py-6">
-  <a href={`/articles/${slug}`} class="group block">
+  <a href={getArticleUrl(slug, lang)} class="group block">
     <time datetime={publishedAt.toISOString()} class="text-sm text-gray-500">
-      {
-        publishedAt.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      }
+      {formatDate(publishedAt, lang)}
     </time>
     <h2 class="mt-1 text-xl font-semibold group-hover:text-gray-600">
       {title}

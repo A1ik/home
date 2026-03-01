@@ -1,32 +1,67 @@
 ---
 import "../styles/global.css";
+import { defaultLang, languages } from "../i18n/config";
+import type { Language } from "../i18n/config";
+import { useTranslations, getLocalizedPath } from "../i18n/utils";
+import LanguageSwitcher from "../components/LanguageSwitcher.astro";
 
 interface Props {
   title: string;
   description?: string;
+  lang?: Language;
 }
 
-const { title, description = "Personal website and blog" } = Astro.props;
+const {
+  title,
+  description = "Personal website and blog",
+  lang = defaultLang,
+} = Astro.props;
+const t = useTranslations(lang);
+const currentPath = Astro.url.pathname;
+const siteUrl = Astro.site?.origin || "";
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title} | doichev.com</title>
+    {
+      languages.map((l) => (
+        <link
+          rel="alternate"
+          hreflang={l}
+          href={`${siteUrl}${getLocalizedPath(currentPath.replace(/^\/(ru|uk)/, "") || "/", l)}`}
+        />
+      ))
+    }
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={`${siteUrl}${currentPath.replace(/^\/(ru|uk)/, "") || "/"}`}
+    />
   </head>
   <body class="min-h-screen bg-white text-gray-900 antialiased">
     <header class="border-b border-gray-200">
       <nav
         class="mx-auto flex max-w-3xl items-center justify-between px-4 py-4"
       >
-        <a href="/" class="text-lg font-semibold tracking-tight">doichev.com</a>
-        <ul class="flex gap-6 text-sm">
-          <li><a href="/" class="hover:text-gray-600">Articles</a></li>
-        </ul>
+        <a
+          href={getLocalizedPath("/", lang)}
+          class="text-lg font-semibold tracking-tight">doichev.com</a
+        >
+        <div class="flex items-center gap-6">
+          <ul class="flex gap-6 text-sm">
+            <li>
+              <a href={getLocalizedPath("/", lang)} class="hover:text-gray-600"
+                >{t("nav.articles")}</a>
+            </li>
+          </ul>
+          <LanguageSwitcher currentLang={lang} currentPath={currentPath} />
+        </div>
       </nav>
     </header>
 
@@ -38,7 +73,8 @@ const { title, description = "Personal website and blog" } = Astro.props;
       <div
         class="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-gray-500"
       >
-        &copy; {new Date().getFullYear()} doichev.com
+        &copy; {new Date().getFullYear()}
+        {t("footer.copyright")}
       </div>
     </footer>
   </body>

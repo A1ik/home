@@ -1,11 +1,18 @@
 ---
 import { getCollection } from "astro:content";
-import BaseLayout from "../layouts/BaseLayout.astro";
-import ArticleCard from "../components/ArticleCard.astro";
-import { defaultLang } from "../i18n/config";
-import { useTranslations, getSlugFromEntryId } from "../i18n/utils";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ArticleCard from "../../components/ArticleCard.astro";
+import { languages, defaultLang } from "../../i18n/config";
+import type { Language } from "../../i18n/config";
+import { useTranslations, getSlugFromEntryId } from "../../i18n/utils";
 
-const lang = defaultLang;
+export async function getStaticPaths() {
+  return languages
+    .filter((lang) => lang !== defaultLang)
+    .map((lang) => ({ params: { lang } }));
+}
+
+const { lang } = Astro.params as { lang: Language };
 const t = useTranslations(lang);
 
 const articles = (await getCollection("articles"))
